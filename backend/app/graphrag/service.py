@@ -47,8 +47,12 @@ class OllamaClient:
             "model": self.model,
             "prompt": prompt,
             "stream": False,
-            "options": {"temperature": 0.2},
+            "options": {
+                "temperature": 0.2,
+                "num_predict": 512,
+            },
         }
+
         if system:
             payload["system"] = system
 

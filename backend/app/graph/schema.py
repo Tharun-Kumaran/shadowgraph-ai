@@ -14,9 +14,21 @@ _ALLOWED = re.compile(r"^CREATE (CONSTRAINT|INDEX|FULLTEXT INDEX) [a-z_]+ IF NOT
 
 def schema_dir() -> Path:
     env = os.environ.get("SHADOWGRAPH_SCHEMA_DIR")
-    if env:
+    if env and Path(env).exists():
         return Path(env)
-    return Path(__file__).resolve().parents[3] / "database"
+    # 1. Project root /database (when running from repo workspace)
+    candidate_root = Path(__file__).resolve().parents[3] / "database"
+    if candidate_root.exists():
+        return candidate_root
+    # 2. Local backend /database
+    candidate_backend = Path(__file__).resolve().parents[2] / "database"
+    if candidate_backend.exists():
+        return candidate_backend
+    # 3. Container filesystem /database
+    if Path("/database").exists():
+        return Path("/database")
+    return candidate_root
+
 
 
 def load_statements(directory: Path | None = None) -> list[str]:

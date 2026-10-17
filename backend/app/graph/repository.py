@@ -134,10 +134,10 @@ class GraphRepository:
             "MERGE (b:Handle:SGNode {uid: $handle_b_uid}) "
             "ON CREATE SET b.name = $handle_b, b.created_at = datetime() "
             "MERGE (a)-[r:SAME_AS {clue_id: $clue_id}]->(b) "
-            "ON CREATE SET r.created_at = datetime() "
+            "ON CREATE SET r.status = $status, r.created_at = datetime() "
+            "ON MATCH SET r.status = CASE WHEN r.status IN ['supported', 'rejected', 'under_review'] THEN r.status ELSE $status END "
             "SET r.confidence_score = $score, "
             "r.score_type = $score_type, "
-            "r.status = $status, "
             "r.priority = $priority, "
             "r.coverage = $coverage, "
             "r.signals_json = $signals_json, "
@@ -148,6 +148,7 @@ class GraphRepository:
             "r.scoring_method_version = $version, "
             "r.updated_at = datetime()"
         )
+
         params = {
             "handle_a_uid": f"handle:{clue.handle_a.casefold()}",
             "handle_b_uid": f"handle:{clue.handle_b.casefold()}",

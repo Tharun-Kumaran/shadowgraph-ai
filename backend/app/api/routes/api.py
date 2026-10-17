@@ -106,6 +106,7 @@ async def upload_file(
     file: UploadFile = File(...),
     settings: Settings = Depends(get_settings),
     repo: GraphRepository = Depends(get_repo),
+    neo4j: Neo4jClient = Depends(get_neo4j),
     _auth: None = Depends(require_api_key),
 ):
     raw_bytes = await file.read()
@@ -139,6 +140,9 @@ async def upload_file(
         except Exception as exc:
             rejected.append(RejectedRecord(index=idx, reason=str(exc)))
 
+    if accepted > 0:
+        CollectionPipeline(settings, neo4j)._refresh_identity_clues()
+
     return IngestReport(
         batch_id=f"batch_{int(time.time())}",
         filename=filename,
@@ -152,6 +156,7 @@ async def upload_file(
         observation_ids=obs_ids,
         stored=True,
     )
+
 
 
 # --- Graph & Exploration ---

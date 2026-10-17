@@ -139,3 +139,103 @@ def test_graphrag_fallback_when_ollama_offline(client, monkeypatch):
     assert "answer" in data
     assert data["llm_available"] is False
     assert any("fallback" in lim.lower() for lim in data["limitations"])
+
+
+def test_clue_detail_not_found(client, mock_repo):
+    mock_repo.get_clue.return_value = None
+    res = client.get("/api/v1/clues/clue_nonexistent")
+    assert res.status_code == 404
+    assert "not found" in res.json()["detail"].lower()
+
+
+def test_entity_details_not_found(client, mock_repo):
+    mock_repo.get_entity_details.return_value = None
+    res = client.get("/api/v1/entities/entity_nonexistent")
+    assert res.status_code == 404
+    assert "not found" in res.json()["detail"].lower()
+
+
+def test_export_endpoints(client, mock_neo4j):
+    mock_neo4j.read.return_value = [
+        {
+            "uid": "cve:CVE-2024-3400",
+            "type": "cve",
+            "value": "CVE-2024-3400",
+            "subtype": None,
+            "valid": True,
+            "post_evidence": ["SYN-POST-001"],
+        }
+    ]
+    # JSON Export
+    res_json = client.get("/api/v1/export/indicators/json")
+    assert res_json.status_code == 200
+    assert len(res_json.json()) == 1
+    assert res_json.json()[0]["value"] == "CVE-2024-3400"
+
+    # CSV Export
+    res_csv = client.get("/api/v1/export/indicators/csv")
+    assert res_csv.status_code == 200
+    assert "CVE-2024-3400" in res_csv.text
+    assert "indicator_uid,type,value" in res_csv.text
+
+    # STIX 2.1 Export
+    res_stix = client.get("/api/v1/export/stix")
+    assert res_stix.status_code == 200
+    bundle = res_stix.json()
+    assert bundle["type"] == "bundle"
+    assert any(obj["type"] == "indicator" for obj in bundle["objects"])
+
+
+def test_upload_file_exceeds_max_bytes(client):
+    large_payload = b"X" * (5 * 1024 * 1024 + 10)
+    res = client.post(
+        "/api/v1/ingest/upload",
+        headers={"X-API-Key": "test-secret-key-12345"},
+        files={"file": ("dump.txt", large_payload, "text/plain")},
+    )
+    assert res.status_code == 413
+    assert "maximum upload size" in res.json()["detail"]
+
+
+def test_upload_file_valid_ingestion(client, mock_repo):
+    json_content = b'[{"id": "TEST-POST-1", "author": "threat_actor", "text": "Deploying exploit for CVE-2024-3400 at 198.51.100.55"}]'
+    res = client.post(
+        "/api/v1/ingest/upload",
+        headers={"X-API-Key": "test-secret-key-12345"},
+        files={"file": ("test_dump.json", json_content, "application/json")},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["accepted"] == 1
+    assert data["stored"] is True
+    assert mock_repo.store_observation.called
+
+
+def test_save_clue_cypher_preserves_analyst_status(mock_neo4j):
+    from app.graph.repository import GraphRepository
+    from app.schemas.clues import ClueResult, ClueStatus
+    repo = GraphRepository(mock_neo4j)
+    clue = ClueResult(
+        clue_id="clue:test1234",
+        handle_a="pepela",
+        handle_b="Spirigatito",
+        score=0.45,
+        score_type="heuristic",
+        status=ClueStatus.CANDIDATE,
+        priority="normal",
+        coverage=0.35,
+        signals={},
+        evidence_ids=["SYN-POST-001"],
+        explanation=["Test explanation"],
+        contradictions=[],
+        limitations=[],
+        scoring_method_version="1.0.0",
+        weights={"technical_artifact_overlap": 0.65},
+    )
+
+    repo.save_clue(clue)
+    assert mock_neo4j.write.called
+    cypher_sent = mock_neo4j.write.call_args[0][0]
+    assert "ON MATCH SET r.status = CASE WHEN r.status IN ['supported', 'rejected', 'under_review'] THEN r.status ELSE $status END" in cypher_sent
+
+

@@ -58,11 +58,13 @@ ShadowGraph AI is a self-hosted Cyber Threat Intelligence (CTI) investigation pl
 | **PoC Preservation** | **Completed** | Reconstructed PoC preserved in `legacy/shadowgraph_poc.py` keeping 5 experimental weights (0.65, 0.15, 0.08, 0.07, 0.05). |
 | **Entity Extraction** | **Completed** | CVE, EVM wallet, Bitcoin (Base58/Bech32), Tox ID checksum, UUID, PGP, Hashes (MD5/SHA1/SHA256), Domains, IPs, and Gazetteer. |
 | **Graph Database** | **Completed** | Neo4j 5.x integration with strict parameterised queries, constraints, indexes, and provenance tracking. |
-| **Candidate Clues** | **Completed** | Non-destructive `SAME_AS` edges, noisy-OR specificity, circular UTC temporal distance, and contradiction detection. |
-| **Interactive SOC UI**| **Completed** | React 18, TypeScript, Vite, Cytoscape.js interactive graph, dark cyan/navy aesthetic, and clue review queue. |
-| **Local AI & GraphRAG**| **Completed** | Ollama integration (`qwen3`) with citations, read-only query templates, and a deterministic database fallback. |
+| **Candidate Clues** | **Completed** | Non-destructive `SAME_AS` edges, noisy-OR specificity, circular UTC temporal distance, contradiction detection, and analyst review state preservation. |
+| **Tor & CTI Collector**| **Completed** | Hardened collector with SSRF defenses (blocking private IPs, loopback, cloud metadata), strict v3 `.onion` validation, `socks5h://` proxy DNS leak protection, 100KB streaming limit, and redirect refusal. |
+| **Interactive SOC UI**| **Completed** | React 18, TypeScript, Vite, Cytoscape.js interactive graph, dark cyan/navy aesthetic, live Tor status indicator, and clue review queue. |
+| **Local AI & GraphRAG**| **Completed** | Ollama integration (`qwen3`) with evidence citations, read-only query templates, bounded tokens, and deterministic database fallback. |
 | **SIEM & Incident Export**| **Completed** | Structured JSON, CSV, STIX 2.1 bundle export, and CERT-In Section 70B 6-hour draft generator. |
-| **Automated Testing** | **Completed** | 71 automated unit and integration tests passing (`pytest`). |
+| **Automated Testing** | **Completed** | 88 automated unit and integration tests passing (`pytest`). |
+
 
 ---
 

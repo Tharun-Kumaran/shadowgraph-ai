@@ -1,0 +1,31 @@
+{
+  "_comment": "Contextual entity dictionary. Canonical name -> aliases. Organisations listed here are FICTIONAL (Microsoft sample company names) and exist for the synthetic demo. Malware and product names are public, widely documented names used only for keyword matching. Extend as needed.",
+  "malware": {
+    "LockBit": ["LockBit 3.0", "LockBit Black"],
+    "ALPHV": ["BlackCat"],
+    "Emotet": [],
+    "QakBot": ["Qbot", "QuakBot"],
+    "RedLine Stealer": ["RedLine"],
+    "Raccoon Stealer": [],
+    "Mirai": [],
+    "Cobalt Strike": [],
+    "GlassViper Loader": ["GlassViper"],
+    "NullHarbor": ["NullHarbor RAT"]
+  },
+  "organization": {
+    "Contoso Health": ["Contoso"],
+    "Fabrikam Logistics": ["Fabrikam"],
+    "Northwind Fintech": ["Northwind"],
+    "Tailspin Airways": ["Tailspin"]
+  },
+  "product": {
+    "PAN-OS": ["GlobalProtect"],
+    "Ivanti Connect Secure": [],
+    "Citrix NetScaler": ["NetScaler", "Citrix ADC"],
+    "Microsoft Exchange": ["Exchange Server"],
+    "MOVEit Transfer": ["MOVEit"],
+    "Atlassian Confluence": ["Confluence"],
+    "Fortinet FortiOS": ["FortiOS", "FortiGate"],
+    "Apache Struts": []
+  }
+}

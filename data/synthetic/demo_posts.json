@@ -1,0 +1,47 @@
+[
+  {
+    "id": "SYN-POST-001",
+    "author": "pepela",
+    "source": "darkforum-alpha",
+    "source_type": "synthetic",
+    "timestamp": "2026-03-01T23:10:00Z",
+    "synthetic": true,
+    "text": "[SYNTHETIC DATASET - FICTIONAL CTI] Selling weaponized exploit chain for CVE-2024-3400 affecting PAN-OS GlobalProtect. Tox contact: 56A1ADE4B65B86BCD51CC73E2CD4E542179F47959FE3E0E21B4B0ACDADE51855D34D34D3D1E5. Clean proof available."
+  },
+  {
+    "id": "SYN-POST-002",
+    "author": "pepela",
+    "source": "darkforum-alpha",
+    "source_type": "synthetic",
+    "timestamp": "2026-03-03T00:40:00Z",
+    "synthetic": true,
+    "text": "[SYNTHETIC DATASET - FICTIONAL CTI] Escrow deposits accepted only to wallet 0x52908400098527886E0F7030069857D2E4169EE7. PGP fingerprint: A1B2 C3D4 E5F6 0718 293A 4B5C 6D7E 8F90 A1B2 C3D4"
+  },
+  {
+    "id": "SYN-POST-003",
+    "author": "Spirigatito",
+    "source": "darkforum-beta",
+    "source_type": "synthetic",
+    "timestamp": "2026-03-05T01:05:00Z",
+    "synthetic": true,
+    "text": "[SYNTHETIC DATASET - FICTIONAL CTI] New GlassViper Loader build compiled. Ping tox 56a1ade4b65b86bcd51cc73e2cd4e542179f47959fe3e0e21b4b0acdade51855d34d34d3d1e5 for fast licensing. Tested on Windows 11."
+  },
+  {
+    "id": "SYN-POST-004",
+    "author": "Spirigatito",
+    "source": "darkforum-beta",
+    "source_type": "synthetic",
+    "timestamp": "2026-03-06T22:55:00Z",
+    "synthetic": true,
+    "text": "[SYNTHETIC DATASET - FICTIONAL CTI] Looking for working CVE-2024-3400 access brokers targeting Contoso Health or similar orgs. C2 hosted at 198.51.100.24."
+  },
+  {
+    "id": "SYN-POST-005",
+    "author": "DarkKitten_X",
+    "source": "darkforum-alpha",
+    "source_type": "synthetic",
+    "timestamp": "2026-03-10T14:20:00Z",
+    "synthetic": true,
+    "text": "[SYNTHETIC DATASET - FICTIONAL CTI] Unrelated seller posting generic ransomware affiliate ads. LockBit 3.0 leak site update. Contact via tox 00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF11223344."
+  }
+]

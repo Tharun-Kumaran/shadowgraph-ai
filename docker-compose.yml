@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  neo4j:
+    image: neo4j:5.18-community
+    container_name: shadowgraph_neo4j
+    restart: unless-stopped
+    ports:
+      - "7475:7474"   # HTTP browser
+      - "7688:7687"   # Bolt protocol (distinct from standard 7687 to prevent conflicts)
+    environment:
+      - NEO4J_AUTH=neo4j/shadowgraph_secret_password
+      - NEO4J_PLUGINS=["apoc"]
+    volumes:
+      - shadowgraph_neo4j_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: shadowgraph_backend
+    restart: unless-stopped
+    ports:
+      - "8100:8100"
+    environment:
+      - SHADOWGRAPH_NEO4J_URI=bolt://neo4j:7687
+      - SHADOWGRAPH_NEO4J_USER=neo4j
+      - SHADOWGRAPH_NEO4J_PASSWORD=shadowgraph_secret_password
+      - SHADOWGRAPH_API_KEY=dev-shadowgraph-key
+      - SHADOWGRAPH_OLLAMA_BASE_URL=http://host.docker.internal:11434
+    depends_on:
+      neo4j:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: shadowgraph_frontend
+    restart: unless-stopped
+    ports:
+      - "8180:80"
+    depends_on:
+      - backend
+
+volumes:
+  shadowgraph_neo4j_data:

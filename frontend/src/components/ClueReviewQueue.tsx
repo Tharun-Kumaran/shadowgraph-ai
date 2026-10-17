@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Clue } from '../types';
 
 interface ClueReviewQueueProps {
@@ -14,6 +14,16 @@ export const ClueReviewQueue: React.FC<ClueReviewQueueProps> = ({ clues, apiKey,
   const [statusAction, setStatusAction] = useState<'supported' | 'rejected' | 'under_review'>('supported');
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedClue && clues.length > 0) {
+      setSelectedClue(clues[0]);
+    } else if (selectedClue && clues.length > 0) {
+      const updated = clues.find(c => c.clue_id === selectedClue.clue_id);
+      if (updated) setSelectedClue(updated);
+    }
+  }, [clues]);
+
 
   const handleReview = async () => {
     if (!selectedClue) return;

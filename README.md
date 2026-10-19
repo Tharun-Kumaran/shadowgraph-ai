@@ -61,6 +61,7 @@ ShadowGraph AI is a self-hosted Cyber Threat Intelligence (CTI) investigation pl
 | **Candidate Clues** | **Completed** | Non-destructive `SAME_AS` edges, noisy-OR specificity, circular UTC temporal distance, contradiction detection, and analyst review state preservation. |
 | **Tor & CTI Collector**| **Completed** | Hardened collector with SSRF defenses (blocking private IPs, loopback, cloud metadata), strict v3 `.onion` validation, `socks5h://` proxy DNS leak protection, 100KB streaming limit, and redirect refusal. |
 | **Interactive SOC UI**| **Completed** | React 18, TypeScript, Vite, Cytoscape.js interactive graph, dark cyan/navy aesthetic, live Tor status indicator, and clue review queue. |
+| **Enterprise SOC Workbench**| **Completed** | CrowdStrike Falcon & Cortex XSIAM aesthetic (obsidian `#09090b`/`#0a0b0e`, gunmetal `#121216`, crimson `#e11d48`), D3.js force-directed threat graph with 135px collision guardrails, live Tor .onion scraper modal, and Section 70B filing dossier (`threatgraph_neo4j_workbench.html`). |
 | **Local AI & GraphRAG**| **Completed** | Ollama integration (`qwen3`) with evidence citations, read-only query templates, bounded tokens, and deterministic database fallback. |
 | **SIEM & Incident Export**| **Completed** | Structured JSON, CSV, STIX 2.1 bundle export, and CERT-In Section 70B 6-hour draft generator. |
 | **Automated Testing** | **Completed** | 88 automated unit and integration tests passing (`pytest`). |
@@ -105,7 +106,9 @@ cd frontend
 npm install
 npm run dev -- --port 5173
 ```
-Open your browser at: `http://localhost:5173`
+Open your browser at:
+- **Primary React SOC Workbench:** `http://localhost:5173`
+- **Standalone Falcon & XSIAM HTML Workbench:** `http://localhost:5173/threatgraph_neo4j_workbench.html` (or open `threatgraph_neo4j_workbench.html` directly in any web browser).
 
 ---
 

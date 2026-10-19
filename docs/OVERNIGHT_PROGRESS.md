@@ -84,5 +84,11 @@
 - Added `/health` and `/api/tor-ingest` root aliases in `backend/app/main.py`.
 - Verified production build (`tsc -b && vite build` in 967ms) and backend test suite (88 of 88 passing).
 
+### Milestone 9: GitHub Remote Configuration & Deployment Verification
+- Configured ED25519 SSH remote (`git@github.com:Tharun-Kumaran/shadowgraph-ai.git`) on branch `master`.
+- Fixed entity serialization in `/api/tor-ingest` (converting `ExtractedEntity` dataclasses into dictionaries).
+- Added graceful fallback to `LOCAL_REGEX_ENGINE` when encountering invalid or offline Tor `.onion` URLs.
+- Verified test suite (88/88 passed), Vite production bundle (compiled in 532ms), and clean git synchronization with `origin/master`.
+
 
 

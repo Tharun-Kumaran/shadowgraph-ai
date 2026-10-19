@@ -77,25 +77,41 @@ def create_app() -> FastAPI:
         raw_text = fallback
 
         if settings.tor_enabled and url:
-            from app.ingestion.tor_collector import safe_fetch_onion
-            scraped = safe_fetch_onion(url, proxy=settings.tor_proxy)
-            if scraped:
-                mode = "LIVE_TOR_SOCKS5H"
-                raw_text = scraped
+            try:
+                from app.ingestion.tor_collector import safe_fetch_onion
+                scraped = safe_fetch_onion(url, proxy=settings.tor_proxy)
+                if scraped:
+                    mode = "LIVE_TOR_SOCKS5H"
+                    raw_text = scraped
+            except Exception:
+                pass
 
-        from app.extraction.extractor import extract_all_entities
+
+        from app.extraction.extractor import RegexExtractor
         import re
-        entities = extract_all_entities(raw_text)
+        entities = RegexExtractor().extract(raw_text)
         handle_match = re.search(r"Handle:\s*([a-zA-Z0-9_-]+)", raw_text, re.IGNORECASE)
         handle = handle_match.group(1) if handle_match else "unknown_actor"
+
+
+        entity_list = []
+        for e in entities:
+            entity_list.append({
+                "type": e.type.value if hasattr(e.type, "value") else str(e.type),
+                "value": e.value,
+                "raw": getattr(e, "raw", e.value),
+                "valid": getattr(e, "valid", True),
+                "notes": getattr(e, "notes", ""),
+            })
 
         return {
             "url": url,
             "mode": mode,
             "handle": handle,
             "raw_text": raw_text,
-            "entities": [e.model_dump() for e in entities],
+            "entities": entity_list,
         }
+
 
     return app
 

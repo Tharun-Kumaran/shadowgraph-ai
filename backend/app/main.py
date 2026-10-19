@@ -60,7 +60,45 @@ def create_app() -> FastAPI:
 
     app.include_router(api_router, prefix=settings.api_prefix)
 
+    @app.get("/health")
+    def root_health():
+        return {
+            "status": "ok",
+            "service": "shadowgraph-ai",
+            "version": "0.1.0",
+            "tor_socks5h": settings.tor_proxy if settings.tor_enabled else "socks5h://127.0.0.1:9050",
+        }
+
+    @app.post("/api/tor-ingest")
+    async def tor_ingest_endpoint(payload: dict):
+        url = payload.get("url", "")
+        fallback = payload.get("fallback_text", "")
+        mode = "LOCAL_REGEX_ENGINE"
+        raw_text = fallback
+
+        if settings.tor_enabled and url:
+            from app.ingestion.tor_collector import safe_fetch_onion
+            scraped = safe_fetch_onion(url, proxy=settings.tor_proxy)
+            if scraped:
+                mode = "LIVE_TOR_SOCKS5H"
+                raw_text = scraped
+
+        from app.extraction.extractor import extract_all_entities
+        import re
+        entities = extract_all_entities(raw_text)
+        handle_match = re.search(r"Handle:\s*([a-zA-Z0-9_-]+)", raw_text, re.IGNORECASE)
+        handle = handle_match.group(1) if handle_match else "unknown_actor"
+
+        return {
+            "url": url,
+            "mode": mode,
+            "handle": handle,
+            "raw_text": raw_text,
+            "entities": [e.model_dump() for e in entities],
+        }
+
     return app
+
 
 
 app = create_app()

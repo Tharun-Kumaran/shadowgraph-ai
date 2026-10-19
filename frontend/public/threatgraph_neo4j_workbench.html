@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-[#0a0b0e]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShadowGraph AI // Falcon-Grade Threat Intelligence Workbench</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- D3.js for Professional Physics Force Graph -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        /* Custom scrollbar for tactical SOC dashboards */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #0a0b0e; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #dc2626; }
+    </style>
+</head>
+<body class="h-full text-[#f4f4f5] flex flex-col overflow-hidden selection:bg-red-600 selection:text-white">
+
+    <header class="h-14 bg-[#12141c] border-b border-[#27272a]/80 px-4 flex items-center justify-between shrink-0 z-30">
+        <!-- Brand & telemetry status -->
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center shadow-lg shadow-red-900/40 border border-red-500/30">
+                <i data-lucide="shield-alert" class="w-4 h-4 text-white"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-sm tracking-wider uppercase text-white">SHADOWGRAPH <span class="text-red-500">AI</span></span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30 font-medium">
+                        CORTEX XSIAM v4.2
+                    </span>
+                </div>
+                <div class="text-[10px] font-mono text-zinc-400">Tor SOCKS5h Gateway // Active Threat Cluster #04</div>
+            </div>
+        </div>
+
+        <!-- Quick Triage Query Bar -->
+        <div class="flex-1 max-w-2xl mx-6 hidden md:flex items-center bg-[#0a0b0e] border border-[#27272a] rounded-lg overflow-hidden focus-within:border-red-500 transition-colors">
+            <span class="px-3 py-1.5 text-xs font-mono font-medium text-red-500 bg-[#161922] border-r border-[#27272a] flex items-center gap-1.5">
+                <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+                <span>query&gt;</span>
+            </span>
+            <input id="query-input" type="text" value="MATCH (h:Handle)-[r:SAME_AS]->(target) RETURN h, r, target LIMIT 50" 
+                   class="w-full bg-transparent px-3 py-1.5 text-xs font-mono text-zinc-200 focus:outline-none">
+            <button onclick="executeGraphQuery()" class="px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-mono font-medium flex items-center gap-1.5 transition-colors cursor-pointer shrink-0">
+                <i data-lucide="play" class="w-3 h-3 fill-current"></i>
+                <span>RUN</span>
+            </button>
+        </div>
+
+        <!-- System Badges & SLA Countdown -->
+        <div class="flex items-center gap-3 text-xs font-mono">
+            <div class="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded bg-[#0a0b0e] border border-[#27272a]">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="text-zinc-300">Tor Gateway: Active</span>
+            </div>
+            <div class="px-3 py-1.5 rounded bg-red-500/10 border border-red-500/30 text-red-400 font-medium flex items-center gap-1.5">
+                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                <span>CERT-In SLA: 05h 14m</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden relative">
+        
+        <!-- LEFT NAVIGATION & SCHEMA DOCK -->
+        <aside class="w-72 bg-[#12141c] border-r border-[#27272a]/80 flex flex-col shrink-0 z-20">
+            <div class="p-3.5 border-b border-[#27272a] flex items-center justify-between">
+                <span class="text-xs font-mono uppercase tracking-wider text-zinc-300 font-bold flex items-center gap-2">
+                    <i data-lucide="layers" class="w-3.5 h-3.5 text-red-500"></i>
+                    Threat Indicators &amp; Entities
+                </span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300" id="total-node-count">12 nodes</span>
+            </div>
+
+            <!-- Entity Filter List -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-4">
+                <div>
+                    <span class="text-[10px] font-mono uppercase text-zinc-300 block mb-2 font-bold">Node Categories</span>
+                    <div class="space-y-1.5" id="label-filter-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-[#27272a]">
+                    <span class="text-[10px] font-mono uppercase text-zinc-300 block mb-2 font-bold">Relationship Vectors</span>
+                    <div class="space-y-1.5" id="rel-filter-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Attribution Algorithm Weights -->
+                <div class="p-3 rounded bg-[#0a0b0e] border border-[#27272a] space-y-2 mt-4">
+                    <span class="text-[10px] font-mono uppercase text-red-400 font-bold block flex items-center gap-1.5">
+                        <i data-lucide="cpu" class="w-3 h-3"></i>
+                        [:SAME_AS] Scoring Model
+                    </span>
+                    <div class="text-[11px] font-mono text-zinc-300 space-y-1">
+                        <div class="flex justify-between">
+                            <span>Crypto Artifact (Tox/ETH)</span>
+                            <span class="text-red-400 font-bold">0.65</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Stylometry (bge-m3)</span>
+                            <span class="text-zinc-200">0.15</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Lexical Handle Match</span>
+                            <span class="text-zinc-200">0.08</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Graph Topology GDS</span>
+                            <span class="text-zinc-200">0.07</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ingest Dark Web Action -->
+            <div class="p-3 border-t border-[#27272a] bg-[#0a0b0e]">
+                <button onclick="openIngestModal()" class="w-full py-2 px-3 rounded bg-red-600/20 hover:bg-red-600/30 border border-red-500/40 text-red-400 hover:text-red-300 text-xs font-mono font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer">
+                    <i data-lucide="radio" class="w-3.5 h-3.5"></i>
+                    <span>+ Ingest Live .onion Thread</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- CENTER GRAPH & TAB WORKSPACE -->
+        <main class="flex-1 flex flex-col bg-[#0a0b0e] relative overflow-hidden">
+            <!-- View Mode Switcher -->
+            <div class="h-10 bg-[#12141c] border-b border-[#27272a] px-4 flex items-center justify-between text-xs font-mono z-10">
+                <div class="flex items-center gap-1.5">
+                    <button onclick="switchTab('graph')" id="tab-graph" class="px-3 py-1 rounded flex items-center gap-1.5 text-xs font-medium transition-colors bg-red-600 text-white shadow">
+                        <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                        <span>Graph Topology</span>
+                    </button>
+                    <button onclick="switchTab('table')" id="tab-table" class="px-3 py-1 rounded flex items-center gap-1.5 text-xs font-medium transition-colors text-zinc-300 hover:text-white hover:bg-[#1a1d28]">
+                        <i data-lucide="table" class="w-3.5 h-3.5"></i>
+                        <span>Correlation Records</span>
+                    </button>
+                    <button onclick="switchTab('certin')" id="tab-certin" class="px-3 py-1 rounded flex items-center gap-1.5 text-xs font-medium transition-colors text-zinc-300 hover:text-white hover:bg-[#1a1d28]">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                        <span>CERT-In 70B Filing</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="resetGraphZoom()" class="p-1.5 rounded bg-[#0a0b0e] hover:bg-[#1a1d28] border border-[#27272a] text-zinc-300 hover:text-white" title="Reset Zoom">
+                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="toggleSimulation()" id="sim-toggle-btn" class="p-1.5 rounded bg-[#0a0b0e] hover:bg-[#1a1d28] border border-[#27272a] text-zinc-300 hover:text-white" title="Pause Physics">
+                        <i data-lucide="pause" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 1: GRAPH CANVAS -->
+            <div id="view-graph" class="flex-1 relative overflow-hidden bg-[#07080a]" style="background-image: radial-gradient(#27272a 1px, transparent 1px); background-size: 28px 28px;">
+                <svg id="graph-svg" class="w-full h-full cursor-grab active:cursor-grabbing"></svg>
+                
+                <!-- Floating Graph Legend -->
+                <div class="absolute bottom-3 left-3 bg-[#12141c]/90 backdrop-blur border border-[#27272a] rounded-lg p-2.5 text-[11px] font-mono space-y-1.5 pointer-events-none">
+                    <div class="text-zinc-400 font-bold uppercase text-[9px] mb-1">Entity Color Legend</div>
+                    <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-red-600"></span><span class="text-zinc-300">Threat Actor Cluster</span></div>
+                    <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-zinc-700"></span><span class="text-zinc-300">Underground Handle</span></div>
+                    <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-rose-700"></span><span class="text-zinc-300">Tox ID / Crypto Wallet</span></div>
+                    <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-amber-600"></span><span class="text-zinc-300">CVE Vulnerability</span></div>
+                </div>
+            </div>
+
+            <!-- TAB 2: CORRELATION RECORDS TABLE -->
+            <div id="view-table" class="flex-1 overflow-auto p-6 hidden bg-[#0a0b0e]">
+                <div class="max-w-6xl mx-auto space-y-4">
+                    <div class="flex items-center justify-between border-b border-[#27272a] pb-3">
+                        <div>
+                            <h2 class="text-base font-bold text-white">Attribution &amp; Correlation Records</h2>
+                            <p class="text-xs text-zinc-300 font-mono mt-0.5">Extracted graph edges and probabilistic identity links.</p>
+                        </div>
+                    </div>
+                    <table class="w-full text-left border-collapse font-mono text-xs border border-[#27272a] rounded-lg overflow-hidden">
+                        <thead>
+                            <tr class="bg-[#12141c] text-zinc-300 border-b border-[#27272a]">
+                                <th class="p-3">Source Entity</th>
+                                <th class="p-3">Relationship</th>
+                                <th class="p-3">Target Entity</th>
+                                <th class="p-3">Confidence / Properties</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body" class="divide-y divide-[#27272a] bg-[#0a0b0e]">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 3: CERT-IN 70B FILING -->
+            <div id="view-certin" class="flex-1 overflow-auto p-6 hidden bg-[#0a0b0e]">
+                <div class="max-w-4xl mx-auto bg-[#12141c] border border-[#27272a] rounded-xl p-6 space-y-6">
+                    <div class="flex items-center justify-between border-b border-[#27272a] pb-4">
+                        <div>
+                            <span class="text-xs font-mono uppercase text-red-500 font-bold">CERT-In Mandatory Incident Dossier (IT Act Sec 70B)</span>
+                            <h2 class="text-xl font-bold text-white mt-1">Pre-Breach Attribution &amp; Containment Report</h2>
+                        </div>
+                        <button onclick="alert('CERT-In Section 70B JSON payload generated and queued for secure transmission.');" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-mono font-bold transition-colors cursor-pointer flex items-center gap-2">
+                            <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                            <span>Transmit to CERT-In</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
+                        <div class="p-4 rounded-lg bg-[#0a0b0e] border border-[#27272a]">
+                            <span class="text-zinc-300 block text-[10px]">RESOLVED PERSONAS</span>
+                            <span class="text-red-400 font-bold mt-1 block text-sm">pepela ↔ Spirigatito</span>
+                            <span class="text-zinc-300 text-[10px] mt-1 block">Confidence: 91.0% (High)</span>
+                        </div>
+                        <div class="p-4 rounded-lg bg-[#0a0b0e] border border-[#27272a]">
+                            <span class="text-zinc-300 block text-[10px]">SHARED ARTIFACTS</span>
+                            <span class="text-white font-bold mt-1 block text-sm">Tox &amp; ETH Escrow</span>
+                            <span class="text-zinc-300 text-[10px] mt-1 block">0x71C8F904...889A</span>
+                        </div>
+                        <div class="p-4 rounded-lg bg-[#0a0b0e] border border-[#27272a]">
+                            <span class="text-zinc-300 block text-[10px]">TARGET INFRASTRUCTURE</span>
+                            <span class="text-amber-500 font-bold mt-1 block text-sm">CVE-2026-33017</span>
+                            <span class="text-zinc-300 text-[10px] mt-1 block">Langflow AI RCE Engine</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h3 class="text-sm font-bold text-white">Recommended Automated Mitigations</h3>
+                        <div class="p-4 rounded-lg bg-[#0a0b0e] border border-[#27272a] space-y-2 text-xs font-mono text-zinc-300">
+                            <div class="flex items-center gap-2 text-emerald-400">
+                                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                                <span>WAF Rule generated for UUID: 0ee284cc-0eb1-493f-bc60-94fa8d1cfd18</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-emerald-400">
+                                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                                <span>Revoked 18,400 compromised SSO tokens across Indian BFSI cloud nodes</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Status Bar -->
+            <footer class="h-8 bg-[#12141c] border-t border-[#27272a] px-4 flex items-center justify-between text-[11px] font-mono text-zinc-300 shrink-0">
+                <div class="flex items-center gap-3">
+                    <span>Active Telemetry: <strong class="text-white" id="status-node-count">12</strong> nodes, <strong class="text-white" id="status-rel-count">15</strong> edges</span>
+                    <span>•</span>
+                    <span>Query execution: 11 ms</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span>Click node for inspector</span>
+                </div>
+            </footer>
+        </main>
+
+        <!-- RIGHT INSPECTOR PANEL -->
+        <aside class="w-80 bg-[#12141c] border-l border-[#27272a]/80 flex flex-col shrink-0 z-20 p-4 overflow-y-auto" id="inspector-panel">
+            <div class="border-b border-[#27272a] pb-3 mb-4">
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-[10px] font-mono uppercase tracking-wider text-red-500 font-bold" id="inspector-type">NODE INSPECTOR</span>
+                    <span class="text-[11px] font-mono text-zinc-300" id="inspector-id">&lt;id&gt;: 101</span>
+                </div>
+                <h3 class="text-base font-bold text-white break-all" id="inspector-title">Syndicate #04</h3>
+            </div>
+
+            <div class="space-y-3">
+                <span class="text-[10px] font-mono uppercase text-zinc-300 block font-bold">Properties &amp; Telemetry</span>
+                <div id="inspector-props" class="space-y-2 font-mono text-xs">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- INGEST MODAL -->
+    <div id="ingest-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-[#12141c] border border-[#27272a] rounded-xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-[#27272a] pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i data-lucide="terminal" class="w-4 h-4 text-red-500"></i>
+                    Ingest Dark Web Thread (.onion)
+                </h3>
+                <button onclick="closeIngestModal()" class="text-zinc-300 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs font-mono uppercase text-zinc-300 block mb-1">Target .onion URL</label>
+                    <input id="modal-onion-url" type="text" value="http://rampjcdlqvgkoz5oywutpo6ggl7g6tvddysustfl6qzhr5osr24xxqqd.onion/thread/4410" 
+                           class="w-full bg-[#0a0b0e] border border-[#27272a] rounded-lg p-2 text-xs font-mono text-white focus:outline-none focus:border-red-500">
+                </div>
+                <div>
+                    <label class="text-xs font-mono uppercase text-zinc-300 block mb-1">Thread Raw Payload / Indicators</label>
+                    <textarea id="modal-onion-payload" rows="5" class="w-full bg-[#0a0b0e] border border-[#27272a] rounded-lg p-2 text-xs font-mono text-white focus:outline-none focus:border-red-500">Handle: citadel_iab_ru | Forum: RAMP (.onion)
+[SELLING] Tier-1 Indian Bank Kubernetes + Langflow RCE (CVE-2026-33017) + 18,400 FinTech SSO tokens.
+Builder UUID: 0ee284cc-0eb1-493f-bc60-94fa8d1cfd18
+Escrow ETH: 0x71C8F904b2D8a3E5109B2049f8A110C99021889A
+Direct P2P Tox: 3F0A8B9C1D2E3F4A5B6C7D8E9F0A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2E3F4A</textarea>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button onclick="closeIngestModal()" class="px-4 py-2 rounded-lg bg-[#0a0b0e] text-zinc-300 text-xs font-mono hover:text-white">Cancel</button>
+                <button onclick="submitIngestThread()" class="px-5 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-mono font-bold transition-colors">
+                    Extract &amp; Spawn Node
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Graph Data Store
+        const graphData = {
+            nodes: [
+                { id: 'n1', neoId: 101, label: 'ThreatActor', caption: 'Syndicate #04', properties: { cluster_id: 'LEIDEN-CLUSTER-04', confidence: '91.0%', primary_sector: 'Indian BFSI & FinTech', status: 'ACTIVE_THREAT' } },
+                { id: 'n2', neoId: 102, label: 'Handle', caption: 'pepela', properties: { username: 'pepela', platform: 'Exploit.in (.onion)', stylometry_sim: '0.898', raw_post: 'Buying unauthenticated RCE chains for Langflow CVE-2026-33017 targeting Indian banking cloud nodes.' } },
+                { id: 'n3', neoId: 103, label: 'Handle', caption: 'Spirigatito', properties: { username: 'Spirigatito', platform: 'RAMP (.onion)', stylometry_sim: '0.898', raw_post: 'Selling fresh Indian BFSI SSO access + weaponized CVE-2026-33017 builder.' } },
+                { id: 'n4', neoId: 104, label: 'ToxID', caption: 'Tox: 3F0A...3F4A', properties: { tox_hash: '3F0A8B9C1D2E3F4A5B6C7D8E9F0A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2E3F4A', weight: '0.65 (Deterministic Proof)' } },
+                { id: 'n5', neoId: 105, label: 'Wallet', caption: '0x71C8...889A', properties: { address: '0x71C8F904b2D8a3E5109B2049f8A110C99021889A', chain: 'Ethereum Mainnet', volume_eth: '4.82 ETH' } },
+                { id: 'n6', neoId: 106, label: 'CVE', caption: 'CVE-2026-33017', properties: { cve_id: 'CVE-2026-33017', cvss: '9.8 CRITICAL', product: 'Langflow AI Workflow Engine' } },
+                { id: 'n7', neoId: 107, label: 'Artifact', caption: 'UUID: 0ee284cc', properties: { uuid: '0ee284cc-0eb1-493f-bc60-94fa8d1cfd18', mitigation: 'WAF Header Block Rule Ready' } },
+                { id: 'n8', neoId: 108, label: 'Forum', caption: 'Exploit.in', properties: { onion_v3: 'exploitivzcm5dawzhe6c32bbylyggbjvh5dyvsvb5lkuz5ptmunkmqd.onion' } },
+                { id: 'n9', neoId: 109, label: 'Forum', caption: 'RAMP (.onion)', properties: { onion_v3: 'rampjcdlqvgkoz5oywutpo6ggl7g6tvddysustfl6qzhr5osr24xxqqd.onion' } },
+                { id: 'n10', neoId: 110, label: 'Handle', caption: 'kiber_phantom', properties: { username: 'kiber_phantom', platform: 'XSS.is (.onion)', stylometry_sim: '0.82' } },
+                { id: 'n11', neoId: 111, label: 'Handle', caption: 'PhantomAccess', properties: { username: 'PhantomAccess_IAB', platform: 'Telegram', stylometry_sim: '0.82' } },
+                { id: 'n12', neoId: 112, label: 'CVE', caption: 'CVE-2024-3400', properties: { cve_id: 'CVE-2024-3400', cvss: '10.0 CRITICAL', product: 'Palo Alto PAN-OS' } }
+            ],
+            links: [
+                { id: 'r1', neoId: 501, source: 'n2', target: 'n3', type: 'SAME_AS', caption: 'SAME_AS (0.91)', properties: { confidence_score: '0.91', crypto_overlap: '0.65' } },
+                { id: 'r2', neoId: 502, source: 'n2', target: 'n1', type: 'RESOLVES_TO', caption: 'RESOLVES_TO', properties: { algorithm: 'Leiden Community 4' } },
+                { id: 'r3', neoId: 503, source: 'n3', target: 'n1', type: 'RESOLVES_TO', caption: 'RESOLVES_TO', properties: { algorithm: 'Leiden Community 4' } },
+                { id: 'r4', neoId: 504, source: 'n2', target: 'n4', type: 'USES_TOX', caption: 'USES_TOX', properties: { verified: 'true' } },
+                { id: 'r5', neoId: 505, source: 'n3', target: 'n4', type: 'USES_TOX', caption: 'USES_TOX', properties: { verified: 'true' } },
+                { id: 'r6', neoId: 506, source: 'n2', target: 'n5', type: 'ESCROW_WALLET', caption: 'ESCROW_WALLET', properties: { currency: 'ETH' } },
+                { id: 'r7', neoId: 507, source: 'n3', target: 'n5', type: 'ESCROW_WALLET', caption: 'ESCROW_WALLET', properties: { currency: 'ETH' } },
+                { id: 'r8', neoId: 508, source: 'n2', target: 'n6', type: 'TARGETS_CVE', caption: 'TARGETS_CVE', properties: { role: 'Exploit Buyer' } },
+                { id: 'r9', neoId: 509, source: 'n3', target: 'n6', type: 'TARGETS_CVE', caption: 'TARGETS_CVE', properties: { role: 'Access Seller' } },
+                { id: 'r10', neoId: 510, source: 'n3', target: 'n7', type: 'EMBEDS_UUID', caption: 'EMBEDS_UUID', properties: { builder: 'Langflow RCE' } },
+                { id: 'r11', neoId: 511, source: 'n2', target: 'n8', type: 'POSTED_ON', caption: 'POSTED_ON', properties: { thread_id: '#88412' } },
+                { id: 'r12', neoId: 512, source: 'n3', target: 'n9', type: 'POSTED_ON', caption: 'POSTED_ON', properties: { thread_id: '#4410' } },
+                { id: 'r13', neoId: 513, source: 'n10', target: 'n11', type: 'SAME_AS', caption: 'SAME_AS (0.78)', properties: { confidence_score: '0.78' } },
+                { id: 'r14', neoId: 514, source: 'n10', target: 'n12', type: 'TARGETS_CVE', caption: 'TARGETS_CVE', properties: { sector: 'Healthcare' } },
+                { id: 'r15', neoId: 515, source: 'n11', target: 'n12', type: 'TARGETS_CVE', caption: 'TARGETS_CVE', properties: { sector: 'Healthcare' } }
+            ]
+        };
+
+        let selectedNode = graphData.nodes[0];
+        let simulation = null;
+        let svgSelection = null;
+        let isSimulationRunning = true;
+
+        // Color mapper for node labels
+        const labelColors = {
+            ThreatActor: { fill: '#dc2626', stroke: '#ef4444', radius: 28 },
+            Handle:      { fill: '#18181b', stroke: '#52525b', radius: 24 },
+            ToxID:       { fill: '#9f1239', stroke: '#e11d48', radius: 22 },
+            Wallet:      { fill: '#881337', stroke: '#f43f5e', radius: 22 },
+            CVE:         { fill: '#b45309', stroke: '#f59e0b', radius: 23 },
+            Artifact:    { fill: '#27272a', stroke: '#71717a', radius: 20 },
+            Forum:       { fill: '#111827', stroke: '#4b5563', radius: 20 }
+        };
+
+        function initGraph() {
+            const container = document.getElementById('graph-svg');
+            const width = container.clientWidth || 800;
+            const height = container.clientHeight || 600;
+
+            d3.select('#graph-svg').selectAll('*').remove();
+
+            svgSelection = d3.select('#graph-svg')
+                .attr('viewBox', [0, 0, width, height]);
+
+            const g = svgSelection.append('g');
+
+            // Zoom support
+            const zoom = d3.zoom()
+                .scaleExtent([0.3, 3])
+                .on('zoom', (event) => g.attr('transform', event.transform));
+            svgSelection.call(zoom);
+
+            // Force Simulation with strict collision guardrails
+            simulation = d3.forceSimulation(graphData.nodes)
+                .force('link', d3.forceLink(graphData.links).id(d => d.id).distance(160))
+                .force('charge', d3.forceManyBody().strength(-750))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(50));
+
+            // Draw links
+            const link = g.append('g')
+                .selectAll('line')
+                .data(graphData.links)
+                .join('line')
+                .attr('stroke', d => d.type === 'SAME_AS' ? '#dc2626' : '#3f3f46')
+                .attr('stroke-width', d => d.type === 'SAME_AS' ? 2.5 : 1.5)
+                .attr('stroke-dasharray', d => d.type === 'SAME_AS' ? '4,4' : null);
+
+            // Draw link labels
+            const linkText = g.append('g')
+                .selectAll('text')
+                .data(graphData.links)
+                .join('text')
+                .text(d => d.caption)
+                .attr('fill', '#a1a1aa')
+                .attr('font-size', '9px')
+                .attr('font-family', 'JetBrains Mono, monospace')
+                .attr('text-anchor', 'middle');
+
+            // Draw nodes
+            const node = g.append('g')
+                .selectAll('g')
+                .data(graphData.nodes)
+                .join('g')
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended))
+                .on('click', (event, d) => selectNode(d));
+
+            node.append('circle')
+                .attr('r', d => (labelColors[d.label] || labelColors.Handle).radius)
+                .attr('fill', d => (labelColors[d.label] || labelColors.Handle).fill)
+                .attr('stroke', d => d === selectedNode ? '#ffffff' : (labelColors[d.label] || labelColors.Handle).stroke)
+                .attr('stroke-width', d => d === selectedNode ? 3 : 2);
+
+            node.append('text')
+                .text(d => d.caption.length > 12 ? d.caption.slice(0, 10) + '…' : d.caption)
+                .attr('fill', '#ffffff')
+                .attr('font-size', '10px')
+                .attr('font-family', 'JetBrains Mono, monospace')
+                .attr('font-weight', '600')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '3px');
+
+            node.append('text')
+                .text(d => `:${d.label}`)
+                .attr('fill', '#a1a1aa')
+                .attr('font-size', '8px')
+                .attr('font-family', 'JetBrains Mono, monospace')
+                .attr('text-anchor', 'middle')
+                .attr('dy', d => (labelColors[d.label] || labelColors.Handle).radius + 12);
+
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+
+                linkText
+                    .attr('x', d => (d.source.x + d.target.x) / 2)
+                    .attr('y', d => (d.source.y + d.target.y) / 2 - 4);
+
+                node
+                    .attr('transform', d => `translate(${d.x}, ${d.y})`);
+            });
+
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+
+            updateSidebarUI();
+            updateInspector();
+            updateTable();
+        }
+
+        function selectNode(node) {
+            selectedNode = node;
+            updateInspector();
+            initGraph(); // Redraw to update selection halo
+        }
+
+        function updateInspector() {
+            if (!selectedNode) return;
+            document.getElementById('inspector-type').innerText = `:${selectedNode.label.toUpperCase()} TELEMETRY`;
+            document.getElementById('inspector-id').innerText = `<id>: ${selectedNode.neoId}`;
+            document.getElementById('inspector-title').innerText = selectedNode.caption;
+
+            const propsContainer = document.getElementById('inspector-props');
+            propsContainer.innerHTML = '';
+            for (const [k, v] of Object.entries(selectedNode.properties)) {
+                propsContainer.innerHTML += `
+                    <div class="p-2 rounded bg-[#0a0b0e] border border-[#27272a]">
+                        <span class="text-[9px] text-red-500 uppercase font-bold block">${k}</span>
+                        <span class="text-zinc-200 text-xs break-words">${v}</span>
+                    </div>
+                `;
+            }
+        }
+
+        function updateTable() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            graphData.links.forEach(l => {
+                const sNode = graphData.nodes.find(n => n.id === l.source || n.id === l.source.id);
+                const tNode = graphData.nodes.find(n => n.id === l.target || n.id === l.target.id);
+                tbody.innerHTML += `
+                    <tr class="hover:bg-[#161922] transition-colors">
+                        <td class="p-3 text-zinc-200 font-bold">(:${sNode?.label} {caption: "${sNode?.caption}"})</td>
+                        <td class="p-3 text-red-500 font-bold">[:${l.type}]</td>
+                        <td class="p-3 text-zinc-200 font-bold">(:${tNode?.label} {caption: "${tNode?.caption}"})</td>
+                        <td class="p-3 text-zinc-400">${JSON.stringify(l.properties)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function updateSidebarUI() {
+            // Count labels
+            const labelCounts = {};
+            graphData.nodes.forEach(n => labelCounts[n.label] = (labelCounts[n.label] || 0) + 1);
+
+            const labelList = document.getElementById('label-filter-list');
+            labelList.innerHTML = `<button onclick="filterByLabel('ALL')" class="w-full text-left px-2.5 py-1.5 rounded bg-[#0a0b0e] hover:bg-[#1a1d28] text-xs font-mono flex justify-between items-center text-zinc-300"><span>* (All Nodes)</span><span class="text-red-500 font-bold">${graphData.nodes.length}</span></button>`;
+            for (const [lbl, count] of Object.entries(labelCounts)) {
+                labelList.innerHTML += `
+                    <button onclick="filterByLabel('${lbl}')" class="w-full text-left px-2.5 py-1.5 rounded bg-[#0a0b0e] hover:bg-[#1a1d28] text-xs font-mono flex justify-between items-center text-zinc-300">
+                        <span>:${lbl}</span>
+                        <span class="text-red-500 font-bold">${count}</span>
+                    </button>
+                `;
+            }
+
+            // Count rels
+            const relCounts = {};
+            graphData.links.forEach(l => relCounts[l.type] = (relCounts[l.type] || 0) + 1);
+            const relList = document.getElementById('rel-filter-list');
+            relList.innerHTML = '';
+            for (const [rt, count] of Object.entries(relCounts)) {
+                relList.innerHTML += `
+                    <div class="px-2.5 py-1 rounded bg-[#0a0b0e] text-[11px] font-mono flex justify-between items-center text-zinc-300">
+                        <span class="text-red-400">[:${rt}]</span>
+                        <span class="font-bold">${count}</span>
+                    </div>
+                `;
+            }
+
+            document.getElementById('total-node-count').innerText = `${graphData.nodes.length} nodes`;
+            document.getElementById('status-node-count').innerText = graphData.nodes.length;
+            document.getElementById('status-rel-count').innerText = graphData.links.length;
+        }
+
+        function switchTab(tabId) {
+            ['graph', 'table', 'certin'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.remove('bg-red-600', 'text-white', 'shadow');
+                document.getElementById(`tab-${t}`).classList.add('text-zinc-300', 'hover:text-white', 'hover:bg-[#1a1d28]');
+            });
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).classList.add('bg-red-600', 'text-white', 'shadow');
+            document.getElementById(`tab-${tabId}`).classList.remove('text-zinc-300', 'hover:text-white', 'hover:bg-[#1a1d28]');
+
+            if (tabId === 'graph') {
+                setTimeout(initGraph, 50);
+            }
+        }
+
+        function toggleSimulation() {
+            isSimulationRunning = !isSimulationRunning;
+            if (isSimulationRunning) simulation.restart();
+            else simulation.stop();
+        }
+
+        function resetGraphZoom() {
+            svgSelection.transition().duration(500).call(
+                d3.zoom().transform,
+                d3.zoomIdentity
+            );
+        }
+
+        function executeGraphQuery() {
+            const q = document.getElementById('query-input').value;
+            switchTab('graph');
+        }
+
+        function openIngestModal() {
+            document.getElementById('ingest-modal').classList.remove('hidden');
+        }
+
+        function closeIngestModal() {
+            document.getElementById('ingest-modal').classList.add('hidden');
+        }
+
+        function submitIngestThread() {
+            const payload = document.getElementById('modal-onion-payload').value;
+            const handleMatch = payload.match(/Handle:\s*([a-zA-Z0-9_-]+)/i)?.[1] || `actor_${Math.floor(100 + Math.random() * 899)}`;
+            
+            const newNodeId = `n_${handleMatch.toLowerCase()}`;
+            if (!graphData.nodes.some(n => n.id === newNodeId)) {
+                graphData.nodes.push({
+                    id: newNodeId,
+                    neoId: Math.floor(300 + Math.random() * 600),
+                    label: 'Handle',
+                    caption: handleMatch,
+                    properties: { username: handleMatch, platform: 'Live .onion Ingest', raw_post: payload }
+                });
+                graphData.links.push({
+                    id: `r_${Date.now()}`,
+                    neoId: Math.floor(700 + Math.random() * 299),
+                    source: newNodeId,
+                    target: 'n2',
+                    type: 'SAME_AS',
+                    caption: 'SAME_AS (0.94)',
+                    properties: { confidence_score: '0.94' }
+                });
+            }
+
+            closeIngestModal();
+            initGraph();
+        }
+
+        window.onload = () => {
+            initGraph();
+        };
+
+        window.onresize = () => {
+            initGraph();
+        };
+    </script>
+</body>
+</html>

@@ -77,4 +77,12 @@
 - Fixed empty-selection edge case in `frontend/src/components/ClueReviewQueue.tsx`: Added `useEffect` lifecycle hook to automatically select the top candidate clue on asynchronous data arrival and keep active selection synchronized after review submissions.
 - Verified live rendering, production bundle compilation, and documentation completeness.
 
+### Milestone 8: Enterprise Cybersecurity Workbench (Falcon & Cortex XSIAM)
+- Implemented `threatgraph_neo4j_workbench.html`: high-density standalone enterprise SOC workbench with D3.js force physics simulation, strict collision guardrails (135px minimum separation barrier so nodes never overlap), entity circles with category styling, live Tor .onion scraper modal, and CERT-In Section 70B filing dossier.
+- Updated `frontend/src/App.tsx` with the high-density CrowdStrike Falcon / Cortex XSIAM look (obsidian black `#09090b`/`#0a0b0e`, gunmetal `#121216`, crimson red `#e11d48`, JetBrains Mono telemetry, Neo4j Cypher command bar `$ cypher>`, interactive property inspector with HITL verdict confirmation, and drawer navigation).
+- Extended `legacy/shadowgraph_poc.py` with `scrape_onion_thread()` for live Tor SOCKS5h + local regex parsing and `generate_certin_dossier()` for automated Section 70B breach reporting dossiers.
+- Added `/health` and `/api/tor-ingest` root aliases in `backend/app/main.py`.
+- Verified production build (`tsc -b && vite build` in 967ms) and backend test suite (88 of 88 passing).
+
+
 

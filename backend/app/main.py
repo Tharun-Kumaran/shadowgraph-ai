@@ -70,26 +70,45 @@ def create_app() -> FastAPI:
         }
 
     @app.post("/api/tor-ingest")
-    async def tor_ingest_endpoint(payload: dict):
-        url = payload.get("url", "")
-        fallback = payload.get("fallback_text", "")
+    def tor_ingest_endpoint(payload: dict):
+        import html as html_lib
+        import re
+
+        url = (payload.get("url") or "").strip()
+        fallback = payload.get("fallback_text") or ""
         mode = "LOCAL_REGEX_ENGINE"
         raw_text = fallback
+        live_error = None
+        fetch_meta: dict = {}
 
-        if settings.tor_enabled and url:
+        if not settings.tor_enabled:
+            live_error = "Tor collection disabled (SHADOWGRAPH_TOR_ENABLED=false)"
+        elif not url:
+            live_error = "no URL supplied"
+        else:
             try:
                 from app.ingestion.tor_collector import safe_fetch_onion
-                scraped = safe_fetch_onion(url, proxy=settings.tor_proxy)
-                if scraped:
-                    mode = "LIVE_TOR_SOCKS5H"
-                    raw_text = scraped
-            except Exception:
-                pass
-
+                result = safe_fetch_onion(url, proxy=settings.tor_proxy)
+                body = result.body.decode("utf-8", errors="replace")
+                title_m = re.search(r"<title[^>]*>(.*?)</title>", body, re.I | re.S)
+                text = re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", body)
+                text = re.sub(r"(?s)<[^>]+>", " ", text)
+                text = re.sub(r"\s+", " ", html_lib.unescape(text)).strip()
+                raw_text = text[:50000]
+                mode = "LIVE_TOR_SOCKS5H"
+                fetch_meta = {
+                    "status_code": result.status_code,
+                    "content_type": result.content_type,
+                    "bytes": len(result.body),
+                    "fetched_at": result.fetched_at.isoformat(),
+                    "title": html_lib.unescape(title_m.group(1)).strip() if title_m else None,
+                    **{k: v for k, v in result.metadata.items() if k in {"via", "host"}},
+                }
+            except Exception as exc:  # surface the reason instead of hiding it
+                live_error = f"{type(exc).__name__}: {exc}"
 
         from app.extraction.extractor import RegexExtractor
-        import re
-        entities = RegexExtractor().extract(raw_text)
+        entities = RegexExtractor().extract(raw_text) if raw_text else []
         handle_match = re.search(r"Handle:\s*([a-zA-Z0-9_-]+)", raw_text, re.IGNORECASE)
         handle = handle_match.group(1) if handle_match else "unknown_actor"
 
@@ -107,8 +126,12 @@ def create_app() -> FastAPI:
         return {
             "url": url,
             "mode": mode,
+            "live": mode == "LIVE_TOR_SOCKS5H",
+            "live_error": live_error,
+            "fetch": fetch_meta,
             "handle": handle,
-            "raw_text": raw_text,
+            "raw_text": raw_text[:2000],
+            "entity_count": len(entity_list),
             "entities": entity_list,
         }
 

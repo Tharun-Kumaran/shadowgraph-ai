@@ -15,12 +15,15 @@ from app.core.security import require_api_key
 from app.graph.client import Neo4jClient
 from app.graph.repository import GraphRepository
 from app.graphrag.service import GraphRAGService, OllamaClient
+from app.ingestion import crawl_service
+from app.ingestion.crawler import CrawlConfig
 from app.ingestion.normalizer import normalize_record
 from app.ingestion.parsers import decode_bytes, detect_format, parse_content, safe_filename
 from app.ingestion.pipeline import CollectionPipeline
 from app.reporting.export import ExportService
 from app.schemas.api import (
     CollectSourceRequest,
+    CrawlRequest,
     DashboardMetricsResponse,
     GraphElementsResponse,
     GraphRAGQueryRequest,
@@ -99,6 +102,52 @@ def collect_live_source(
         )
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+
+
+# --- Onion crawler (opt-in) ---
+
+@router.post("/crawl", status_code=status.HTTP_202_ACCEPTED)
+def start_crawl(
+    req: CrawlRequest,
+    settings: Settings = Depends(get_settings),
+    neo4j: Neo4jClient = Depends(get_neo4j),
+    _auth: None = Depends(require_api_key),
+):
+    if not settings.tor_enabled or not settings.crawl_enabled:
+        raise HTTPException(
+            status_code=403,
+            detail="Onion crawler disabled. Set SHADOWGRAPH_TOR_ENABLED=true and SHADOWGRAPH_CRAWL_ENABLED=true.",
+        )
+    if not req.seeds and not req.query:
+        raise HTTPException(status_code=422, detail="Provide at least one seed URL or a discovery query.")
+    cfg = CrawlConfig(
+        max_depth=req.max_depth,
+        max_pages=req.max_pages,
+        max_pages_per_host=req.max_pages_per_host,
+        delay_s=req.delay_s,
+        time_budget_s=req.time_budget_s,
+        respect_robots=req.respect_robots,
+        follow_external_onions=req.follow_external_onions,
+    ).clamp(
+        pages_cap=settings.crawl_max_pages_cap,
+        depth_cap=settings.crawl_max_depth_cap,
+        time_cap=settings.crawl_time_budget_cap_s,
+    )
+    job_id = crawl_service.start_job(settings, neo4j, seeds=req.seeds, query=req.query, config=cfg)
+    return {"job_id": job_id, "status": "running", "poll": f"{settings.api_prefix}/crawl/{job_id}"}
+
+
+@router.get("/crawl")
+def list_crawls():
+    return {"jobs": crawl_service.list_jobs()}
+
+
+@router.get("/crawl/{job_id}")
+def get_crawl(job_id: str):
+    job = crawl_service.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="crawl job not found")
+    return job
 
 
 @router.post("/ingest/upload", response_model=IngestReport)

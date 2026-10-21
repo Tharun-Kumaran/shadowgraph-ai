@@ -57,6 +57,12 @@ class Settings(BaseSettings):
     tor_enabled: bool = False
     tor_proxy: str = "socks5h://127.0.0.1:9050"
 
+    # --- Optional onion crawler (opt-in; requires tor_enabled) ------------
+    crawl_enabled: bool = False
+    crawl_max_pages_cap: int = 100
+    crawl_max_depth_cap: int = 4
+    crawl_time_budget_cap_s: float = 600.0
+
     # --- Identity scoring -----------------------------------------------
     clue_candidate_threshold: float = 0.30
     clue_high_priority_threshold: float = 0.70

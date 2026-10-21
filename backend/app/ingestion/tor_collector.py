@@ -18,6 +18,12 @@ from app.ingestion.collectors import CollectionError, FetchResult, hardened_fetc
 ONION_V3 = re.compile(r"^[a-z2-7]{56}\.onion$")
 
 
+def _is_onion_url(url: str) -> bool:
+    """True only for http(s) URLs whose host is a valid v3 onion (redirect guard)."""
+    parts = urlsplit(url)
+    return parts.scheme in {"http", "https"} and bool(ONION_V3.match((parts.hostname or "").lower()))
+
+
 def safe_fetch_onion(
     url: str,
     *,
@@ -25,6 +31,7 @@ def safe_fetch_onion(
     timeout: tuple[float, float] = (15.0, 45.0),
     max_bytes: int = 2 * 1024 * 1024,
     session: requests.Session | None = None,
+    follow_onion_redirects: bool = False,
 ) -> FetchResult:
     parts = urlsplit(url)
     host = (parts.hostname or "").lower()
@@ -45,6 +52,8 @@ def safe_fetch_onion(
             max_bytes=max_bytes,
             proxies=proxies,
             allowed_content_types=frozenset({"text/html", "text/plain"}),
+            max_redirects=3 if follow_onion_redirects else 0,
+            redirect_validator=_is_onion_url if follow_onion_redirects else None,
         )
         result.metadata.update({"via": "tor", "host": host})
         return result

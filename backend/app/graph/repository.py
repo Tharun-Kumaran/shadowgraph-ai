@@ -124,6 +124,43 @@ class GraphRepository:
 
         self.client.write_many(statements)
 
+    def store_onion_links(self, edges: List[Tuple[str, str]], host_status: Dict[str, str]) -> int:
+        """Persist onion site->site hyperlinks as (:Source)-[:LINKS_TO]->(:Source).
+
+        Hosts are keyed by their stable ``source:<slug>`` uid (same scheme as
+        ``store_observation``) so crawled pages and the link graph join up.
+        Fully parameterised; nothing user-controlled is interpolated.
+        """
+        from app.ingestion.normalizer import slugify
+
+        statements: List[Tuple[str, Dict[str, Any]]] = []
+        hosts = {h for pair in edges for h in pair} | set(host_status)
+        for host in hosts:
+            statements.append((
+                "MERGE (s:Source:SGNode {uid: $uid}) "
+                "ON CREATE SET s.source_id = $sid, s.name = $name, s.type = 'tor', "
+                "s.url = $url, s.created_at = datetime() "
+                "SET s.liveness = coalesce($liveness, s.liveness), s.last_crawled = datetime()",
+                {
+                    "uid": f"source:{slugify(host)}",
+                    "sid": slugify(host),
+                    "name": f"onion:{host[:16]}…",
+                    "url": f"http://{host}/",
+                    "liveness": host_status.get(host),
+                },
+            ))
+        for src, dst in edges:
+            statements.append((
+                "MATCH (a:Source:SGNode {uid: $a}), (b:Source:SGNode {uid: $b}) "
+                "MERGE (a)-[r:LINKS_TO]->(b) "
+                "ON CREATE SET r.first_seen = datetime() SET r.last_seen = datetime()",
+                {"a": f"source:{slugify(src)}", "b": f"source:{slugify(dst)}"},
+            ))
+        if statements:
+            self.client.write_many(statements)
+        return len(edges)
+
+
     def save_clue(self, clue: ClueResult) -> None:
         """
         Store a candidate SAME_AS relationship non-destructively.

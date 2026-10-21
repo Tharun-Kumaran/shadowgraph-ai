@@ -9,10 +9,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Protocol
+from typing import Callable, Protocol
 from urllib.parse import urlsplit
 
 import requests
+from urllib.parse import urljoin
 
 ALLOWED_CONTENT_TYPES = frozenset(
     {"text/plain", "text/html", "text/csv", "application/json", "application/x-ndjson", "application/stix+json"}
@@ -48,6 +49,8 @@ def hardened_fetch(
     max_bytes: int = 5 * 1024 * 1024,
     proxies: dict[str, str] | None = None,
     allowed_content_types: frozenset[str] = ALLOWED_CONTENT_TYPES,
+    max_redirects: int = 0,
+    redirect_validator: "Callable[[str], bool] | None" = None,
 ) -> FetchResult:
     """Stream a single URL with strict limits. Never executes content.
 
@@ -66,6 +69,14 @@ def hardened_fetch(
         raise CollectionError(f"request failed: {type(exc).__name__}") from exc
     with resp:
         if 300 <= resp.status_code < 400:
+            nxt = urljoin(url, resp.headers.get("Location", "")) if resp.headers.get("Location") else None
+            if max_redirects > 0 and nxt and redirect_validator and redirect_validator(nxt):
+                return hardened_fetch(
+                    session, nxt,
+                    allowed_schemes=allowed_schemes, timeout=timeout, max_bytes=max_bytes,
+                    proxies=proxies, allowed_content_types=allowed_content_types,
+                    max_redirects=max_redirects - 1, redirect_validator=redirect_validator,
+                )
             raise CollectionError(f"redirect refused (HTTP {resp.status_code})")
         if resp.status_code != 200:
             raise CollectionError(f"unexpected HTTP status {resp.status_code}")

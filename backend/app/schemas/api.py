@@ -28,6 +28,19 @@ class CollectSourceRequest(BaseModel):
     source_name: Optional[str] = None
 
 
+class CrawlRequest(BaseModel):
+    seeds: List[str] = Field(default_factory=list, max_length=20)
+    query: Optional[str] = Field(default=None, min_length=2, max_length=200)
+    max_depth: int = Field(default=2, ge=0, le=4)
+    max_pages: int = Field(default=25, ge=1, le=100)
+    max_pages_per_host: int = Field(default=15, ge=1, le=100)
+    delay_s: float = Field(default=2.0, ge=0.0, le=30.0)
+    time_budget_s: float = Field(default=240.0, ge=5.0, le=600.0)
+    respect_robots: bool = True
+    follow_external_onions: bool = True
+
+
+
 class TorStatusResponse(BaseModel):
     configured: bool
     enabled: bool
